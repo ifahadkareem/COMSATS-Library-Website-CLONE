@@ -1,0 +1,110 @@
+{
+  "source": "Official COMSATS Junaid Zaidi Library website (https://library.comsats.edu.pk/)",
+  "disclaimer": "Official photographs from the COMSATS Library website. Downloaded for local hosting in this prototype application.",
+  "images": {
+    "library-building-front": {
+      "category": "exterior",
+      "jpg": "exterior/library-building-front.jpg",
+      "webp": "exterior/library-building-front.webp",
+      "alt": "Junaid Zaidi Library building exterior with red brick architecture, central entrance with a clock, and campus grounds",
+      "width": 1920,
+      "height": 800
+    },
+    "library-building-wide": {
+      "category": "exterior",
+      "jpg": "exterior/library-building-wide.jpg",
+      "webp": "exterior/library-building-wide.webp",
+      "alt": "Junaid Zaidi Library exterior showing the full brick facade, large windows, and clock tower",
+      "width": 1920,
+      "height": 800
+    },
+    "conference-event": {
+      "category": "facilities",
+      "jpg": "facilities/conference-event.jpg",
+      "webp": "facilities/conference-event.webp",
+      "alt": "Library conference room used for events and academic gatherings",
+      "width": 1440,
+      "height": 600
+    },
+    "awards-display": {
+      "category": "interior",
+      "jpg": "interior/awards-display.jpg",
+      "webp": "interior/awards-display.webp",
+      "alt": "Library lobby display cabinets showcasing awards, plaques, and medals",
+      "width": 1920,
+      "height": 800
+    },
+    "circulation-desk": {
+      "category": "interior",
+      "jpg": "interior/circulation-desk.jpg",
+      "webp": "interior/circulation-desk.webp",
+      "alt": "Library circulation desk area with security gates and service counter",
+      "width": 1920,
+      "height": 800
+    },
+    "reading-corner": {
+      "category": "interior",
+      "jpg": "interior/reading-corner.jpg",
+      "webp": "interior/reading-corner.webp",
+      "alt": "Library reading corner with bookshelves and seating area",
+      "width": 1920,
+      "height": 800
+    },
+    "social-sciences-section": {
+      "category": "interior",
+      "jpg": "interior/social-sciences-section.jpg",
+      "webp": "interior/social-sciences-section.webp",
+      "alt": "Social Sciences and Psychology bookshelves with QR codes for digital catalog access",
+      "width": 1920,
+      "height": 800
+    },
+    "main-reading-hall": {
+      "category": "interior",
+      "jpg": "interior/main-reading-hall.jpg",
+      "webp": "interior/main-reading-hall.webp",
+      "alt": "Spacious library interior with students studying at tables among rows of bookshelves",
+      "width": 1920,
+      "height": 800
+    },
+    "service-desk-computers": {
+      "category": "interior",
+      "jpg": "interior/service-desk-computers.jpg",
+      "webp": "interior/service-desk-computers.webp",
+      "alt": "Library service desk area with computer stations and bookshelves",
+      "width": 1920,
+      "height": 800
+    },
+    "china-studies-corner": {
+      "category": "interior",
+      "jpg": "interior/china-studies-corner.jpg",
+      "webp": "interior/china-studies-corner.webp",
+      "alt": "China Studies Corner featuring specialized bookshelves, red lanterns, and study areas",
+      "width": 1920,
+      "height": 800
+    },
+    "hec-digital-kiosk": {
+      "category": "facilities",
+      "jpg": "facilities/hec-digital-kiosk.jpg",
+      "webp": "facilities/hec-digital-kiosk.webp",
+      "alt": "HEC Digital Resources kiosk with touchscreen access at the library service desk",
+      "width": 1920,
+      "height": 800
+    },
+    "self-service-kiosk": {
+      "category": "facilities",
+      "jpg": "facilities/self-service-kiosk.jpg",
+      "webp": "facilities/self-service-kiosk.webp",
+      "alt": "Self-service drop box machine with touchscreen interface",
+      "width": 1920,
+      "height": 800
+    },
+    "student-reading": {
+      "category": "interior",
+      "jpg": "interior/student-reading.jpg",
+      "webp": "interior/student-reading.webp",
+      "alt": "Student reading a book near wooden library shelves",
+      "width": 1920,
+      "height": 800
+    }
+  }
+}

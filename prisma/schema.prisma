@@ -1,0 +1,602 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// COMSATS University Islamabad — Junaid Zaidi Library
+// Database Schema (Prisma ORM)
+//
+// Target: PostgreSQL
+//   Change provider below to "postgresql" and update DATABASE_URL
+//   when deploying to a real PostgreSQL instance.
+//
+// Current: SQLite (for localhost prototyping only)
+// ═══════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+  // ── PostgreSQL production config ──
+  // provider = "postgresql"
+  // url      = "postgresql://user:password@localhost:5432/comsats_library"
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENUMS (represented as String for SQLite compatibility;
+// PostgreSQL deployment can use native Prisma enums if desired)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// User roles
+// STUDENT | FACULTY | LIBRARIAN | ADMIN
+
+// General statuses
+// ACTIVE | SUSPENDED | INACTIVE | PENDING | CANCELLED | EXPIRED | COMPLETED
+
+// Book copy statuses
+// AVAILABLE | BORROWED | RESERVED | LOST | DAMAGED | MAINTENANCE
+
+// Borrow transaction statuses
+// ACTIVE | RETURNED | OVERDUE | LOST
+
+// Fine statuses
+// PENDING | PAID | WAIVED
+
+// Study room types
+// READING_ROOM | STUDY_ROOM | COMPUTER_LAB | SEMINAR_ROOM
+
+// Announcement / event statuses
+// DRAFT | PUBLISHED | ARCHIVED
+
+// Access types
+// FREE | INSTITUTIONAL | RESTRICTED
+
+// Notification types
+// BORROW | RETURN | OVERDUE | RESERVATION | FINE | ANNOUNCEMENT | SYSTEM
+
+// Audit actions
+// CREATE | READ | UPDATE | DELETE | LOGIN | LOGOUT
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ORGANIZATIONAL STRUCTURE
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  programs        Program[]
+  studentProfiles StudentProfile[]
+  facultyProfiles FacultyProfile[]
+  theses          Thesis[]
+}
+
+model Program {
+  id           String   @id @default(cuid())
+  name         String
+  code         String
+  departmentId String
+  createdAt    DateTime @default(now())
+
+  department      Department      @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  studentProfiles StudentProfile[]
+  theses          Thesis[]
+
+  @@unique([name, departmentId])
+  @@index([departmentId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// USER & AUTH
+// ═══════════════════════════════════════════════════════════════════════════
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("STUDENT")   // STUDENT | FACULTY | LIBRARIAN | ADMIN
+  status       String   @default("ACTIVE")    // ACTIVE | SUSPENDED | INACTIVE
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  studentProfile      StudentProfile?
+  facultyProfile      FacultyProfile?
+  membership          LibraryMembership?
+  staffProfile        LibraryStaff?
+  borrowTransactions  BorrowTransaction[]
+  reservations        Reservation[]
+  wishlists           Wishlist[]
+  fines               Fine[]
+  roomBookings        RoomBooking[]
+  eventRegistrations  EventRegistration[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+model StudentProfile {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  studentId    String  @unique
+  name         String
+  departmentId String?
+  programId    String?
+  semester     Int?
+  phone        String?
+  avatar       String?
+  membershipId String?
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  program     Program?          @relation(fields: [programId], references: [id], onDelete: SetNull)
+  membership  LibraryMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([studentId])
+  @@index([departmentId])
+  @@index([programId])
+}
+
+model FacultyProfile {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  employeeId   String  @unique
+  departmentId String?
+  designation  String?
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([employeeId])
+  @@index([departmentId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LIBRARY MEMBERSHIP
+// ═══════════════════════════════════════════════════════════════════════════
+
+model LibraryMembership {
+  id              String   @id @default(cuid())
+  membershipNumber String   @unique
+  userId          String   @unique
+  issueDate       DateTime @default(now())
+  expiryDate      DateTime
+  status          String   @default("ACTIVE") // ACTIVE | SUSPENDED | EXPIRED
+  borrowingLimit  Int      @default(5)
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([membershipNumber])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LIBRARY STAFF
+// ═══════════════════════════════════════════════════════════════════════════
+
+model LibraryStaff {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  employeeNumber String  @unique
+  name           String
+  designation    String?
+  email          String?
+  phone          String?
+  image          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([employeeNumber])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOK CATALOG
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Book {
+  id              String   @id @default(cuid())
+  isbn            String?  @unique
+  title           String
+  subtitle        String?
+  description     String? 
+  publicationYear Int?
+  edition         String?
+  subject         String?
+  language        String   @default("English")
+  pages           Int?
+  publisherId     String?
+  coverImage      String?
+  callNumber      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([subject])
+  @@index([publicationYear])
+  @@index([language])
+
+  publisher  Publisher?      @relation(fields: [publisherId], references: [id], onDelete: SetNull)
+  authors    BookAuthor[]
+  categories BookCategory[]
+  copies     BookCopy[]
+  reservations Reservation[]
+  wishlists  Wishlist[]
+
+  @@index([title])
+  @@index([isbn])
+  @@index([publisherId])
+  @@index([callNumber])
+  @@index([createdAt])
+}
+
+model Author {
+  id   String        @id @default(cuid())
+  name String
+
+  books BookAuthor[]
+
+  @@unique([name])
+  @@index([name])
+}
+
+model Publisher {
+  id   String @id @default(cuid())
+  name String @unique
+
+  books Book[]
+
+  @@index([name])
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+
+  books BookCategory[]
+
+  @@index([name])
+}
+
+/// Junction table: Book ↔ Author (many-to-many)
+model BookAuthor {
+  id       String @id @default(cuid())
+  bookId   String
+  authorId String
+
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, authorId])
+  @@index([bookId])
+  @@index([authorId])
+}
+
+/// Junction table: Book ↔ Category (many-to-many)
+model BookCategory {
+  id         String @id @default(cuid())
+  bookId     String
+  categoryId String
+
+  book     Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, categoryId])
+  @@index([bookId])
+  @@index([categoryId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOK COPIES (physical inventory)
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Floor {
+  id          String  @id @default(cuid())
+  name        String
+  floorNumber Int     @unique
+  description String?
+
+  shelves    Shelf[]
+  studyRooms StudyRoom[]
+
+  @@index([floorNumber])
+}
+
+model Shelf {
+  id          String  @id @default(cuid())
+  floorId     String
+  code        String
+  section     String?
+  description String?
+
+  floor Floor       @relation(fields: [floorId], references: [id], onDelete: Restrict)
+  copies BookCopy[]
+
+  @@unique([floorId, code])
+  @@index([floorId])
+  @@index([code])
+  @@index([section])
+}
+
+model BookCopy {
+  id              String   @id @default(cuid())
+  bookId          String
+  accessionNumber String   @unique
+  barcode         String   @unique
+  rfid            String?  @unique
+  shelfId         String?
+  condition       String   @default("GOOD") // NEW | GOOD | FAIR | POOR | DAMAGED
+  status          String   @default("AVAILABLE") // AVAILABLE | BORROWED | RESERVED | LOST | DAMAGED | MAINTENANCE
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  book  Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  shelf Shelf?  @relation(fields: [shelfId], references: [id], onDelete: SetNull)
+  borrowTransactions BorrowTransaction[]
+
+  @@index([bookId])
+  @@index([shelfId])
+  @@index([status])
+  @@index([barcode])
+  @@index([accessionNumber])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BORROWING & CIRCULATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+model BorrowTransaction {
+  id         String    @id @default(cuid())
+  userId     String
+  copyId     String
+  borrowedAt DateTime  @default(now())
+  dueAt      DateTime
+  returnedAt DateTime?
+  status     String    @default("ACTIVE") // ACTIVE | RETURNED | OVERDUE | LOST
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  copy       BookCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
+  fines      Fine[]
+
+  @@index([userId])
+  @@index([copyId])
+  @@index([status])
+  @@index([dueAt])
+  @@index([borrowedAt])
+}
+
+model Reservation {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  status    String   @default("PENDING") // PENDING | FULFILLED | CANCELLED | EXPIRED
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([bookId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+}
+
+model Fine {
+  id            String    @id @default(cuid())
+  userId        String
+  transactionId String
+  amount        Float
+  reason        String  
+  status        String   @default("PENDING") // PENDING | PAID | WAIVED
+  createdAt     DateTime  @default(now())
+  paidAt        DateTime?
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  transaction BorrowTransaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([transactionId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SPACES & ROOMS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model StudyRoom {
+  id          String  @id @default(cuid())
+  name        String
+  type        String  // READING_ROOM | STUDY_ROOM | COMPUTER_LAB | SEMINAR_ROOM
+  floorId     String
+  capacity    Int
+  description String?
+  facilities  String?  // JSON array of facility strings
+  image       String?
+  status      String  @default("ACTIVE") // ACTIVE | INACTIVE | MAINTENANCE
+
+  floor    Floor        @relation(fields: [floorId], references: [id], onDelete: Restrict)
+  bookings RoomBooking[]
+
+  @@index([floorId])
+  @@index([type])
+  @@index([status])
+}
+
+model RoomBooking {
+  id          String   @id @default(cuid())
+  roomId      String
+  userId      String
+  bookingDate String   // YYYY-MM-DD
+  startTime   String   // HH:mm
+  endTime     String   // HH:mm
+  purpose     String? 
+  status      String   @default("CONFIRMED") // CONFIRMED | CANCELLED | COMPLETED
+
+  room StudyRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([bookingDate])
+  @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANNOUNCEMENTS & EVENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String? 
+  content     String? 
+  category    String?
+  image       String?
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  status      String   @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+
+  @@index([status])
+  @@index([publishedAt])
+  @@index([category])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String? 
+  date        String   // YYYY-MM-DD
+  startTime   String   // HH:mm
+  endTime     String?  // HH:mm
+  location    String?
+  capacity    Int?
+  image       String?
+  status      String   @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+
+  registrations EventRegistration[]
+
+  @@index([date])
+  @@index([status])
+}
+
+model EventRegistration {
+  id           String   @id @default(cuid())
+  eventId      String
+  userId       String
+  registeredAt DateTime @default(now())
+  status       String   @default("CONFIRMED") // CONFIRMED | CANCELLED
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DIGITAL RESOURCES & THESES
+// ═══════════════════════════════════════════════════════════════════════════
+
+model DigitalResource {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  category    String?
+  provider    String?
+  url         String?
+  accessType  String  @default("FREE") // FREE | INSTITUTIONAL | RESTRICTED
+  image       String?
+
+  @@index([category])
+  @@index([accessType])
+  @@index([title])
+}
+
+model Thesis {
+  id           String  @id @default(cuid())
+  title        String
+  author       String
+  departmentId String?
+  programId    String?
+  year         Int
+  supervisor   String?
+  keywords     String?
+  abstract     String?
+  documentType String?
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  program    Program?    @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  @@index([author])
+  @@index([departmentId])
+  @@index([programId])
+  @@index([year])
+  @@index([title])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  message   String   
+  type      String    // BORROW | RETURN | OVERDUE | RESERVATION | FINE | ANNOUNCEMENT | SYSTEM
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([readAt])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // CREATE | READ | UPDATE | DELETE | LOGIN | LOGOUT
+  entity    String
+  entityId  String?
+  metadata  String?   // JSON string of change details
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([entityId])
+  @@index([createdAt])
+}
